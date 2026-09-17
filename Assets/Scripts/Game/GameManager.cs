@@ -2,11 +2,18 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    public static GameManager Instance { get; private set; }
+
+    public GridUI myGridUI;
+    public GridUI enemyGridUI;
+
     public GridData myGrid = new GridData();       // my ships
     public GridData enemyGridView = new GridData(); // what I know of enemy's grid (hits/misses only)
 
     public bool isMyTurn;
     private bool gameStarted = false;
+
+    void Awake() { Instance = this; }
 
     void OnEnable()
     {
@@ -25,6 +32,9 @@ public class GameManager : MonoBehaviour
     {
         myGrid.RandomizeShips();
         gameStarted = true;
+
+        myGridUI.Redraw(myGrid);
+        enemyGridUI.Redraw(enemyGridView);
 
         // Host decides who goes first
         if (NetworkManager.Instance.IsHost)
@@ -50,6 +60,7 @@ public class GameManager : MonoBehaviour
     public void FireAt(int x, int y)
     {
         if (!gameStarted || !isMyTurn) return;
+        if (enemyGridView.cells[x, y] != CellState.Empty) return; // already fired here
         NetworkManager.Instance.SendMessageToPeer(NetworkMessage.Fire(x, y));
         isMyTurn = false; // wait for result + turn swap
     }
@@ -61,43 +72,34 @@ public class GameManager : MonoBehaviour
         switch (type)
         {
             case "FIRE":
-                var coords = args[0].Split(',');
-                int fx = int.Parse(coords[0]);
-                int fy = int.Parse(coords[1]);
-
+                var c = args[0].Split(',');
+                int fx = int.Parse(c[0]), fy = int.Parse(c[1]);
                 myGrid.ReceiveFire(fx, fy, out bool hit);
+                myGridUI.Redraw(myGrid);
                 NetworkManager.Instance.SendMessageToPeer(NetworkMessage.Result(hit, fx, fy));
 
                 if (myGrid.AllShipsSunk())
-                {
-                    NetworkManager.Instance.SendMessageToPeer(NetworkMessage.GameOver(false)); // I lose, so opponent wins
-                    Debug.Log("I lost!");
-                }
+                    NetworkManager.Instance.SendMessageToPeer(NetworkMessage.GameOver(false));
                 else
-                {
-                    NetworkManager.Instance.SendMessageToPeer(NetworkMessage.Turn(true)); // give opponent the turn back... 
-                }
+                    NetworkManager.Instance.SendMessageToPeer(NetworkMessage.Turn(true));
                 break;
 
             case "RESULT":
                 bool wasHit = args[0] == "HIT";
-                var rcoords = args[1].Split(',');
-                int rx = int.Parse(rcoords[0]);
-                int ry = int.Parse(rcoords[1]);
+                var rc = args[1].Split(',');
+                int rx = int.Parse(rc[0]), ry = int.Parse(rc[1]);
                 enemyGridView.cells[rx, ry] = wasHit ? CellState.Hit : CellState.Miss;
-                Debug.Log($"Fired at {rx},{ry}: {(wasHit ? "HIT" : "MISS")}");
+                enemyGridUI.Redraw(enemyGridView);
                 break;
 
             case "TURN":
                 isMyTurn = args[0] == "YOU";
-                Debug.Log("My turn: " + isMyTurn);
                 break;
 
             case "GAMEOVER":
-                Debug.Log(args[0] == "YOU_WIN" ? "I win!" : "I lost!");
                 gameStarted = false;
+                Debug.Log(args[0] == "YOU_WIN" ? "I win!" : "I lost!");
                 break;
-
         }
     }
 }

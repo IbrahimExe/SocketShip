@@ -43,19 +43,45 @@ public class GridData
 
     // Randomly place ships on grid ill change this later when i 
     // have time lol (Thanks for the recommendation Darren!)
-    public void RandomizeShips(int shipCount = 5)
+    public void RandomizeShips()
     {
+        int[] shipSizes = { 5, 4, 3, 3, 2 };
+
         System.Random rng = new System.Random();
-        int placed = 0;
-        while (placed < shipCount)
+
+        foreach (int size in shipSizes)
         {
-            int x = rng.Next(0, SIZE);
-            int y = rng.Next(0, SIZE);
-            if (cells[x, y] == CellState.Empty)
+            bool placed = false;
+            while (!placed)
             {
-                cells[x, y] = CellState.Ship;
-                placed++;
+                bool horizontal = rng.Next(2) == 0;
+                int x = rng.Next(0, SIZE);
+                int y = rng.Next(0, SIZE);
+
+                if (CanPlace(x, y, size, horizontal))
+                {
+                    for (int i = 0; i < size; i++)
+                    {
+                        int px = horizontal ? x + i : x;
+                        int py = horizontal ? y : y + i;
+                        cells[px, py] = CellState.Ship;
+                    }
+                    placed = true;
+                }
             }
         }
+    }
+
+    private bool CanPlace(int x, int y, int size, bool horizontal)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            int px = horizontal ? x + i : x;
+            int py = horizontal ? y : y + i;
+
+            if (px < 0 || px >= SIZE || py < 0 || py >= SIZE) return false;
+            if (cells[px, py] != CellState.Empty) return false;
+        }
+        return true;
     }
 }

@@ -8,8 +8,9 @@ public class GridUI : MonoBehaviour
 
     private Image[,] images = new Image[GridData.SIZE, GridData.SIZE];
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private Button[,] buttons = new Button[GridData.SIZE, GridData.SIZE];
+
+    void Awake()
     {
         for (int y = 0; y < GridData.SIZE; y++)
         {
@@ -18,6 +19,7 @@ public class GridUI : MonoBehaviour
                 GameObject cellObj = Instantiate(cellPrefab, transform);
                 Button btn = cellObj.GetComponent<Button>();
                 images[x, y] = cellObj.GetComponent<Image>();
+                buttons[x, y] = btn;
 
                 int cx = x, cy = y;
                 if (isEnemyGrid)
@@ -26,6 +28,20 @@ public class GridUI : MonoBehaviour
                     btn.interactable = false;
             }
         }
+    }
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+       
+    }
+
+    public void SetInteractable(bool value)
+    {
+        if (!isEnemyGrid) return; // never clickable your own board
+        for (int y = 0; y < GridData.SIZE; y++)
+            for (int x = 0; x < GridData.SIZE; x++)
+                buttons[x, y].interactable = value;
     }
 
     public void Redraw(GridData grid)

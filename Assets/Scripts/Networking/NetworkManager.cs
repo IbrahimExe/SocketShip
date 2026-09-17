@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Collections.Concurrent;
 using System.Net;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -183,5 +184,12 @@ public class NetworkManager : MonoBehaviour
         try { client?.Close(); } catch { }
         try { listener?.Stop(); } catch { }
         IsConnected = false;
+    }
+
+    public string GetLocalIPAddress()
+    {
+        var host = Dns.GetHostEntry(Dns.GetHostName());
+        var ip = host.AddressList.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+        return ip != null ? ip.ToString() : "Unable to find IP!";
     }
 }

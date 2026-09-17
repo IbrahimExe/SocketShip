@@ -5,6 +5,10 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     public GameObject waitingPanel;
+    public TMPro.TMP_Text hostIpDisplay;
+
+    public GameObject gameOverPanel;
+    public TMPro.TMP_Text gameOverText;
 
     public GridUI myGridUI;
     public GridUI enemyGridUI;
@@ -25,6 +29,13 @@ public class GameManager : MonoBehaviour
         if (waitingPanel != null)
         {
             waitingPanel.SetActive(true);
+        }
+
+        // Show the host's LAN IP on the waiting panel so they can read it
+        // out to whoever is joining
+        if (NetworkManager.Instance.IsHost && hostIpDisplay != null)
+        {
+            hostIpDisplay.text = "Your IP: " + NetworkManager.Instance.GetLocalIPAddress();
         }
     }
 
@@ -86,17 +97,28 @@ public class GameManager : MonoBehaviour
         Debug.Log("Game started. My turn: " + isMyTurn);
     }
 
+    void ShowGameOver(bool won)
+    {
+        gameStarted = false;
+        enemyGridUI.SetInteractable(false);
+
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(true);
+        if (gameOverText != null)
+            gameOverText.text = won ? "You Win!" : "You Lose!";
+    }
+
     // Update is called once per frame
-//    void Update()
-//    {
-//        if (Input.GetKeyDown(KeyCode.Escape))
-//        {
-//            Application.Quit();
-//#if UNITY_EDITOR
-//            UnityEditor.EditorApplication.isPlaying = false;
-//#endif
-//        }
-//    }
+    //    void Update()
+    //    {
+    //        if (Input.GetKeyDown(KeyCode.Escape))
+    //        {
+    //            Application.Quit();
+    //#if UNITY_EDITOR
+    //            UnityEditor.EditorApplication.isPlaying = false;
+    //#endif
+    //        }
+    //    }
 
     // Call this when the local player clicks a cell on the ENEMY grid to fire
     public void FireAt(int x, int y)
@@ -123,8 +145,7 @@ public class GameManager : MonoBehaviour
                 if (myGrid.AllShipsSunk())
                 {
                     NetworkManager.Instance.SendMessageToPeer(NetworkMessage.GameOver(false)); // attacker wins
-                    gameStarted = false;
-                    enemyGridUI.SetInteractable(false);
+                    ShowGameOver(false); // you lost
                 }
                 else
                 {
@@ -146,11 +167,10 @@ public class GameManager : MonoBehaviour
                 break;
 
             case "GAMEOVER":
-                gameStarted = false;
-                enemyGridUI.SetInteractable(false); // lock the board, game's over
-                Debug.Log(args[0] == "YOU_WIN" ? "I win!" : "I lost!");
+                ShowGameOver(args[0] == "YOU_WIN");
                 break;
 
         }
     }
+
 }

@@ -4,6 +4,8 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    public GameObject waitingPanel;
+
     public GridUI myGridUI;
     public GridUI enemyGridUI;
 
@@ -20,16 +22,31 @@ public class GameManager : MonoBehaviour
         NetworkManager.Instance.OnMessageReceived += HandleMessage;
         NetworkManager.Instance.OnClientConnected += StartGame;   // host side
         NetworkManager.Instance.OnConnectedToHost += StartGame;   // client side
+
+        // to fix race condition 
+        if (NetworkManager.Instance.IsConnected && !gameStarted)
+        {
+            StartGame();
+        }
     }
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        if (waitingPanel != null)
+        {
+            waitingPanel.SetActive(true);
+        }
     }
+
     void StartGame()
     {
+        if (waitingPanel != null)
+        {
+            waitingPanel.SetActive(false);
+        }
+
         myGrid.RandomizeShips();
         gameStarted = true;
 

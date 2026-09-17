@@ -17,6 +17,7 @@ public class NetworkManager : MonoBehaviour
     public event Action OnClientConnected;   // host: someone joined
     public event Action OnConnectedToHost;   // client: successfully connected
     public event Action OnDisconnected;
+    public event Action<string> OnConnectionFailed;
 
     private TcpListener listener;
     private TcpClient client;
@@ -93,10 +94,15 @@ public class NetworkManager : MonoBehaviour
     public void StartClient(string ip)
     {
         IsHost = false;
+        Thread connectThread = new Thread(() => ConnectToHost(ip)) { IsBackground = true };
+        connectThread.Start();
+    }
+    private void ConnectToHost(string ip)
+    {
         try
         {
             client = new TcpClient();
-            client.Connect(ip, PORT);
+            client.Connect(ip, PORT); // runs on background thread
             stream = client.GetStream();
             IsConnected = true;
 
@@ -108,6 +114,7 @@ public class NetworkManager : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogWarning("Client connect failed: " + e.Message);
+            mainThreadActions.Enqueue(() => OnConnectionFailed?.Invoke(e.Message));
         }
     }
 

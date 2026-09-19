@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -107,6 +108,16 @@ public class GameManager : MonoBehaviour
         if (gameOverText != null)
             gameOverText.text = won ? "You Win!" : "You Lose!";
     }
+
+    public void ReturnToMenu()
+    {
+        // TCP will stay alive without this,
+        // If someone tries to then host or join a new game, 
+        // error saying "port already in use" will show up
+        NetworkManager.Instance.Shutdown();
+
+        SceneManager.LoadScene("MainMenu");
+    }    
 
     // Update is called once per frame
     //    void Update()
